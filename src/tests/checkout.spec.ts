@@ -122,21 +122,17 @@ test.describe('Checkout Feature', () => {
     const subtotal = await checkoutPage.getSubtotal()
 
     expect(subtotal).toBe(itemsSubtotalCalc)
-    
   })
 
-    test('Checkout step two, items total price should be correct', async ({ page }) => {
+  test('Checkout step two, items total price should be correct', async ({ page }) => {
 
     const inventoryPage = new InventoryPage(page);
 
     const itemsIndexes = [0, 1];
-    const itemsPrices: number[] = [];
 
     await inventoryPage.goto();
 
     for (const index of itemsIndexes) {
-      const price = await inventoryPage.getItemPrice(index);
-      itemsPrices.push(price);
       await inventoryPage.toggleItemInCart(index);
     }
 
@@ -148,12 +144,27 @@ test.describe('Checkout Feature', () => {
     await checkoutPage.navigateToStepTwo()
     await expect(page).toHaveURL("/checkout-step-two.html")
 
-    const itemsSubtotalCalc = itemsPrices.reduce((sum, n)=> sum + n,0)
-
     const subtotal = await checkoutPage.getSubtotal()
+    const total = await checkoutPage.getTotal()
+    const tax = await checkoutPage.getTaxAmount()
 
-    expect(subtotal).toBe(itemsSubtotalCalc)
-    
+    expect(subtotal + tax).toBe(total)
+  })
+
+  test('Checkout step two, finish should give success message', async ({ page }) => {
+
+    const checkoutPage = new CheckoutPage(page);
+    await checkoutPage.gotoStepOne()
+    await checkoutPage.fillFirstName("a")
+    await checkoutPage.fillLastName("a")
+    await checkoutPage.fillPostalName("a")
+    await checkoutPage.navigateToStepTwo()
+    await expect(page).toHaveURL("/checkout-step-two.html")
+    await checkoutPage.finishCheckout()
+    await expect(page).toHaveURL("/checkout-complete.html")
+    const completeText = await checkoutPage.getCompleteHeaderText()
+    expect(completeText).toContain("Thank you for your order!")
+
   })
 
 });
